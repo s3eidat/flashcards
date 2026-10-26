@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' data: blob:; connect-src 'self' data: blob:; worker-src 'self' blob:; manifest-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Flashcards — Free Spaced Repetition Flashcards (SM-2) | S3eidat Tools</title>
+<meta name="description" content="Make flashcard decks, import from CSV, and study with SM-2 spaced repetition (Again, Hard, Good, Easy). Supports Arabic and right-to-left text. Free, private, saved in your browser.">
+<meta property="og:title" content="Flashcards — free spaced repetition in your browser">
+<meta property="og:description" content="Decks, CSV import and SM-2 spaced repetition. Runs 100% in your browser.">
+<meta property="og:image" content="screenshot.png">
+<link rel="icon" href="kit/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="kit/kit.css">
+<link rel="stylesheet" href="app.css">
+<script src="kit/kit.js"></script>
+</head>
+<body data-tool="flashcards">
+<main class="s3-main">
+  <section class="s3-hero">
+    <h1>Flashcards</h1>
+    <p>Make decks, paste cards from a spreadsheet, and study with spaced repetition so you review each card right before you'd forget it. Works with Arabic and English.</p>
+  </section>
+
+  <section class="card">
+    <div class="row between">
+      <div class="row">
+        <label><span class="sr">Deck</span><select class="select deck-sel" id="deck"></select></label>
+        <button class="btn small" id="newDeck"><svg class="i"><use href="#i-plus"/></svg>New deck</button>
+        <button class="btn ghost small" id="renameDeck">Rename</button>
+        <button class="btn ghost small danger" id="delDeck">Delete</button>
+      </div>
+      <div class="seg" id="tab" role="group" aria-label="View">
+        <button aria-pressed="true" data-v="study">Study</button>
+        <button aria-pressed="false" data-v="cards">Cards</button>
+        <button aria-pressed="false" data-v="io">Import / export</button>
+      </div>
+    </div>
+    <div class="stats mt" id="stats"></div>
+  </section>
+
+  <!-- study -->
+  <section class="card mt" id="p-study">
+    <div class="row between">
+      <h2>Study <small id="left"></small></h2>
+      <label class="field inline">New cards per session<input class="input" type="number" id="newLimit" min="0" max="500" value="20"></label>
+    </div>
+    <div id="studyBox">
+      <div class="flip" id="flip" tabindex="0" aria-live="polite">
+        <div class="flip-in">
+          <div class="face front"><span class="faint side">Front</span><div class="txt" id="front" dir="auto"></div><span class="faint hint">Click or press <kbd>Space</kbd> to show the answer</span></div>
+          <div class="face back"><span class="faint side">Back</span><div class="txt q" id="front2" dir="auto"></div><hr><div class="txt" id="back" dir="auto"></div></div>
+        </div>
+      </div>
+      <div class="grades" id="grades" hidden>
+        <button class="btn grade again" data-q="1"><b>Again</b><span id="g1"></span><kbd>1</kbd></button>
+        <button class="btn grade hard" data-q="3"><b>Hard</b><span id="g3"></span><kbd>2</kbd></button>
+        <button class="btn grade good" data-q="4"><b>Good</b><span id="g4"></span><kbd>3</kbd></button>
+        <button class="btn grade easy" data-q="5"><b>Easy</b><span id="g5"></span><kbd>4</kbd></button>
+      </div>
+      <div class="row center-row mt" id="showRow"><button class="btn primary big" id="show">Show answer</button></div>
+    </div>
+    <div class="empty" id="studyEmpty" hidden></div>
+  </section>
+
+  <!-- cards -->
+  <section class="card mt" id="p-cards" hidden>
+    <form id="cardForm" class="stack">
+      <div class="grid-2">
+        <label class="field">Front<textarea class="textarea prose small-ta" id="cf" dir="auto" maxlength="2000" placeholder="Question, word or prompt"></textarea></label>
+        <label class="field">Back<textarea class="textarea prose small-ta" id="cb" dir="auto" maxlength="4000" placeholder="Answer"></textarea></label>
+      </div>
+      <div class="row">
+        <button class="btn primary" type="submit" id="cardSubmit"><svg class="i"><use href="#i-plus"/></svg>Add card</button>
+        <button class="btn ghost" type="button" id="cardCancel" hidden>Cancel edit</button>
+        <span class="faint">Tip: <kbd>Ctrl</kbd>+<kbd>Enter</kbd> adds the card</span>
+        <span class="grow"></span>
+        <label><span class="sr">Search cards</span><input class="input search" id="q" placeholder="Search cards" dir="auto"></label>
+      </div>
+    </form>
+    <div class="tbl-wrap mt" id="listWrap">
+      <table class="tbl cards-tbl"><thead><tr><th>Front</th><th>Back</th><th>Next review</th><th></th></tr></thead><tbody id="list"></tbody></table>
+    </div>
+    <div class="empty" id="listEmpty"><b>This deck is empty</b>Add cards above, or paste many at once under Import / export.</div>
+  </section>
+
+  <!-- import / export -->
+  <section class="card mt" id="p-io" hidden>
+    <div class="grid-2">
+      <div class="stack">
+        <h2>Import cards</h2>
+        <label class="field">Paste CSV or TSV (front, back per line; copy straight from Excel or Google Sheets)
+          <textarea class="textarea" id="paste" dir="auto" placeholder="apple,تفاحة&#10;book,كتاب&#10;&quot;Hello, world&quot;,مرحبا يا عالم"></textarea>
+        </label>
+        <div class="row">
+          <label class="check"><input type="checkbox" id="header"> First row is a header</label>
+          <label class="check"><input type="checkbox" id="swap"> Swap front and back</label>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="doImport">Import into this deck</button>
+          <label class="btn ghost" id="openFile">Open .csv / .tsv / .json<input type="file" accept=".csv,.tsv,.txt,.json,text/csv,text/plain,application/json" hidden></label>
+          <span class="faint" id="preview"></span>
+        </div>
+      </div>
+      <div class="stack">
+        <h2>Export</h2>
+        <p class="muted">CSV has the card text only. The JSON backup keeps every deck with its review schedule, and can be opened here again.</p>
+        <div class="row">
+          <button class="btn" id="expCsv"><svg class="i"><use href="#i-download"/></svg>This deck as CSV</button>
+          <button class="btn" id="expJson"><svg class="i"><use href="#i-download"/></svg>Backup all decks (.json)</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
